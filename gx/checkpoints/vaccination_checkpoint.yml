@@ -1,0 +1,26 @@
+name: vaccination_checkpoint
+config_version: 1.0
+class_name: SimpleCheckpoint
+validations:
+  - batch_request:
+      datasource_name: vaccination_data
+      data_connector_name: default_runtime_data_connector_name
+      data_asset_name: vaccination_data
+      runtime_parameters:
+        batch_data: ${batch_data}
+    expectation_suite_name: vaccination_expectations
+action_list:
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: store_evaluation_params
+    action:
+      class_name: StoreEvaluationParametersAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction
+  - name: datahub_action
+    action:
+      module_name: datahub.integrations.great_expectations.action
+      class_name: DataHubValidationAction
+      server_url: http://localhost:8080

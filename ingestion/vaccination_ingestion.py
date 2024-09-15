@@ -9,6 +9,8 @@ from datahub.ingestion.api.source import Source, SourceReport
 from datahub.ingestion.api.workunit import MetadataWorkUnit
 from datahub.metadata.schema_classes import MetadataChangeEventClass, DatasetSnapshotClass
 from datahub.metadata.schema_classes import DatasetPropertiesClass
+import great_expectations as ge
+from great_expectations.core.batch import RuntimeBatchRequest
 
 
 # Define the Pydantic dataclass to map the CSV rows
@@ -47,11 +49,31 @@ class VaccinationSource(Source):
     def get_workunits(self) -> Iterable[MetadataWorkUnit]:
         # Read the CSV file
         df = pd.read_csv(self.source_config.csv_file_url)
-        # Process each row and yield MetadataWorkUnit
-        for _, row in df.iterrows():
-            # obviously not really needed, but in the case of sensitive data always good
-            # to run some data quality checks before
 
+        # Initialize the Great Expectations context
+        context = ge.data_context.DataContext()
+
+        # Create a RuntimeBatchRequest for the CSV data
+        batch_request = RuntimeBatchRequest(
+            datasource_name="vaccination_data",
+            data_connector_name="default_runtime_data_connector_name",
+            # Use this connector
+            data_asset_name="vaccination_data",
+            runtime_parameters={"batch_data": df},  # Pass the Pandas dataframe
+            batch_identifiers={"default_identifier_name": "default_identifier"}
+        )
+
+        # Get a validator object for the batch
+        validator = context.get_validator(
+            batch_request=batch_request,
+            expectation_suite_name="vaccination_expectations"
+        )
+
+        # Run validation
+        results = validator.validate()
+
+        # Process each row and yield MetadataWorkUnit (as in previous code)
+        for _, row in df.iterrows():
             vaccination_data = VaccinationData(
                 location=row['location'],
                 date=datetime.strptime(row['date'], "%Y-%m-%d").date(),
