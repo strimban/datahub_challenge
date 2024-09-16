@@ -72,7 +72,7 @@ class VaccinationSource(Source):
         # Run validation
         results = validator.validate()
 
-        # Process each row and yield MetadataWorkUnit (as in previous code)
+        # Process each row and yield MetadataWorkUnit
         for _, row in df.iterrows():
             vaccination_data = VaccinationData(
                 location=row['location'],
